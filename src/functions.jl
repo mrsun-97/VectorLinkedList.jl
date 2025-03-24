@@ -364,3 +364,132 @@ function Base.prepend!(l1::MutableVecLinkedList{T}, l2::MutableVecLinkedList{T})
     end
     return l1
 end
+
+# IndexedIterator for MutableVecLinkedList
+struct IndexedIterator{T}
+    list::MutableVecLinkedList{T}
+end
+
+# Return an iterator that yields tuples of (index, element)
+function indexed(l::MutableVecLinkedList{T}) where {T}
+    return IndexedIterator{T}(l)
+end
+
+function Base.iterate(it::IndexedIterator{T}) where {T}
+    isempty(it.list) && return nothing
+    current_index = it.list.head_index
+    return ((current_index, it.list.elements[current_index].data), current_index)
+end
+
+function Base.iterate(it::IndexedIterator{T}, state::Int) where {T}
+    state == 0 && return nothing
+    next_index = it.list.elements[state].next
+    next_index == 0 && return nothing
+    return ((next_index, it.list.elements[next_index].data), next_index)
+end
+
+Base.length(it::IndexedIterator) = length(it.list)
+Base.eltype(::Type{IndexedIterator{T}}) where {T} = Tuple{Int, T}
+
+# Reverse iterator for MutableVecLinkedList
+struct ReverseIterator{T}
+    list::MutableVecLinkedList{T}
+end
+
+# Return a reverse iterator
+function Base.reverse(l::MutableVecLinkedList{T}) where {T}
+    return ReverseIterator{T}(l)
+end
+
+function Base.iterate(it::ReverseIterator{T}) where {T}
+    isempty(it.list) && return nothing
+    current_index = it.list.tail_index
+    return (it.list.elements[current_index].data, current_index)
+end
+
+function Base.iterate(it::ReverseIterator{T}, state::Int) where {T}
+    state == 0 && return nothing
+    prev_index = it.list.elements[state].prev
+    prev_index == 0 && return nothing
+    return (it.list.elements[prev_index].data, prev_index)
+end
+
+Base.length(it::ReverseIterator) = length(it.list)
+Base.eltype(::Type{ReverseIterator{T}}) where {T} = T
+
+# Reverse indexed iterator
+struct ReverseIndexedIterator{T}
+    list::MutableVecLinkedList{T}
+end
+
+# Return a reverse indexed iterator
+function Base.reverse(it::IndexedIterator{T}) where {T}
+    return ReverseIndexedIterator{T}(it.list)
+end
+
+function Base.iterate(it::ReverseIndexedIterator{T}) where {T}
+    isempty(it.list) && return nothing
+    current_index = it.list.tail_index
+    return ((current_index, it.list.elements[current_index].data), current_index)
+end
+
+function Base.iterate(it::ReverseIndexedIterator{T}, state::Int) where {T}
+    state == 0 && return nothing
+    prev_index = it.list.elements[state].prev
+    prev_index == 0 && return nothing
+    return ((prev_index, it.list.elements[prev_index].data), prev_index)
+end
+
+Base.length(it::ReverseIndexedIterator) = length(it.list)
+Base.eltype(::Type{ReverseIndexedIterator{T}}) where {T} = Tuple{Int, T}
+
+# Helper functions for insert_after and insert_before
+function insert_after!(l::MutableVecLinkedList{T}, index::Int, value::T) where {T}
+    if index <= 0 || index > length(l.elements) || l.elements[index].data === nothing
+        throw(ArgumentError("Invalid index or node already deleted"))
+    end
+    
+    next_index = l.elements[index].next
+    
+    # Create a new element
+    element = LinkedListNode{T}(value, index, next_index)
+    new_index = _insert_free_element!(l, element)
+    
+    # Update the surrounding elements
+    l.elements[index].next = new_index
+    
+    if next_index != 0
+        l.elements[next_index].prev = new_index
+    else
+        # If we're inserting after the tail, update the tail_index
+        l.tail_index = new_index
+    end
+    
+    l.count += 1
+    return new_index
+end
+
+function insert_before!(l::MutableVecLinkedList{T}, index::Int, value::T) where {T}
+    if index <= 0 || index > length(l.elements) || l.elements[index].data === nothing
+        throw(ArgumentError("Invalid index or node already deleted"))
+    end
+    
+    prev_index = l.elements[index].prev
+    
+    # Create a new element
+    element = LinkedListNode{T}(value, prev_index, index)
+    new_index = _insert_free_element!(l, element)
+    
+    # Update the surrounding elements
+    l.elements[index].prev = new_index
+    
+    if prev_index != 0
+        l.elements[prev_index].next = new_index
+    else
+        # If we're inserting before the head, update the head_index
+        l.head_index = new_index
+    end
+    
+    l.count += 1
+    return new_index
+end
