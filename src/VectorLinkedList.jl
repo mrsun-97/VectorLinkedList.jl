@@ -25,6 +25,7 @@ module VectorLinkedList
 #             peek
 
 include("functions.jl")
-export MutableVecLinkedList
+export MutableVecLinkedList, indexed, insert_after!, insert_before!
+
 
 end
