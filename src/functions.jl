@@ -424,3 +424,124 @@ function Base.iterate(iter::Iterators.Reverse{<:MutableVecLinkedList}, state::In
     node = l.elements[state]
     return (node.data, node.prev)
 end
+
+# ============================================================
+#  Indexed iteration
+# ============================================================
+
+"""
+    IndexedIterator{T}
+
+Iterator yielding `(slot_index::Int, value::T)` pairs in forward list order.
+Obtain via `indexed(l)`.  Knowing the slot index during iteration allows O(1)
+operations like `remove!` without a separate search.
+"""
+struct IndexedIterator{T}
+    list::MutableVecLinkedList{T}
+end
+
+"""
+    indexed(l) -> IndexedIterator
+
+Return an iterator over `(slot_index, value)` pairs in list order.
+"""
+indexed(l::MutableVecLinkedList{T}) where {T} = IndexedIterator{T}(l)
+
+function Base.iterate(it::IndexedIterator{T}) where {T}
+    isempty(it.list) && return nothing
+    idx = it.list.head_index
+    return ((idx, it.list.elements[idx].data), it.list.elements[idx].next)
+end
+
+function Base.iterate(it::IndexedIterator{T}, state::Int) where {T}
+    state == 0 && return nothing
+    return ((state, it.list.elements[state].data), it.list.elements[state].next)
+end
+
+Base.length(it::IndexedIterator) = length(it.list)
+Base.eltype(::Type{IndexedIterator{T}}) where {T} = Tuple{Int, T}
+
+"""
+    ReverseIndexedIterator{T}
+
+Like `IndexedIterator` but traverses in reverse order.
+Obtain via `reverse(indexed(l))`.
+"""
+struct ReverseIndexedIterator{T}
+    list::MutableVecLinkedList{T}
+end
+
+Base.reverse(it::IndexedIterator{T}) where {T} = ReverseIndexedIterator{T}(it.list)
+
+function Base.iterate(it::ReverseIndexedIterator{T}) where {T}
+    isempty(it.list) && return nothing
+    idx = it.list.tail_index
+    return ((idx, it.list.elements[idx].data), it.list.elements[idx].prev)
+end
+
+function Base.iterate(it::ReverseIndexedIterator{T}, state::Int) where {T}
+    state == 0 && return nothing
+    return ((state, it.list.elements[state].data), it.list.elements[state].prev)
+end
+
+Base.length(it::ReverseIndexedIterator) = length(it.list)
+Base.eltype(::Type{ReverseIndexedIterator{T}}) where {T} = Tuple{Int, T}
+
+# ============================================================
+#  Search and membership
+# ============================================================
+
+Base.in(value::T, l::MutableVecLinkedList{T}) where {T} = any(x -> x == value, l)
+
+"""
+    findfirst(predicate, l) -> Union{Int, Nothing}
+    findfirst(value, l)     -> Union{Int, Nothing}
+
+Return the slot index of the first element satisfying `predicate` (or equal
+to `value`), or `nothing` if not found.
+"""
+function Base.findfirst(predicate::Function, l::MutableVecLinkedList)
+    for (idx, val) in indexed(l)
+        predicate(val) && return idx
+    end
+    return nothing
+end
+
+Base.findfirst(value::T, l::MutableVecLinkedList{T}) where {T} =
+    findfirst(x -> x == value, l)
+
+# ============================================================
+#  Concatenation
+# ============================================================
+
+"""
+    append!(l1, l2) -> l1
+
+Push every element of `l2` onto the back of `l1`.
+"""
+function Base.append!(l1::MutableVecLinkedList{T}, l2::MutableVecLinkedList{T}) where {T}
+    for v in l2; push!(l1, v); end
+    return l1
+end
+
+"""
+    prepend!(l1, l2) -> l1
+
+Insert every element of `l2` at the front of `l1`, preserving `l2`'s order.
+"""
+function Base.prepend!(l1::MutableVecLinkedList{T}, l2::MutableVecLinkedList{T}) where {T}
+    for v in Iterators.reverse(l2); pushfirst!(l1, v); end
+    return l1
+end
+
+# ============================================================
+#  Base.delete! alias
+# ============================================================
+
+"""
+    delete!(l, idx) -> l
+
+Remove the element at slot `idx` and return the list.
+Alias for `remove!` that follows the `Base.delete!` convention.
+"""
+Base.delete!(l::MutableVecLinkedList, idx::Int) = (remove!(l, idx); l)

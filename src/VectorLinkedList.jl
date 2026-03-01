@@ -10,5 +10,6 @@ export remove!
 export front_index
 export back_index
 export capacity
+export indexed
 
 end

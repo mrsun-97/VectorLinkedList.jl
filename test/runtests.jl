@@ -339,3 +339,53 @@ end
     @test l[indices[5]] == 5
     @test collect(l) == [1, 3, 5]
 end
+
+@testset "indexed: yields (slot_index, value) pairs" begin
+    l = MutableVecLinkedList{Int}(10, 20, 30)
+    pairs = collect(indexed(l))
+    @test length(pairs) == 3
+    @test all(p -> p[2] == l[p[1]], pairs)   # slot index is valid
+    @test [p[2] for p in pairs] == [10, 20, 30]
+end
+
+@testset "reverse(indexed): reverse (slot_index, value) pairs" begin
+    l = MutableVecLinkedList{Int}(10, 20, 30)
+    pairs = collect(reverse(indexed(l)))
+    @test [p[2] for p in pairs] == [30, 20, 10]
+    @test all(p -> p[2] == l[p[1]], pairs)
+end
+
+@testset "in: membership test" begin
+    l = MutableVecLinkedList{Int}(1, 2, 3)
+    @test 2 in l
+    @test !(4 in l)
+end
+
+@testset "findfirst: search by predicate and value" begin
+    l = MutableVecLinkedList{Int}(10, 20, 30)
+    idx = findfirst(x -> x == 20, l)
+    @test idx !== nothing
+    @test l[idx] == 20
+    @test findfirst(x -> x > 100, l) === nothing
+    @test findfirst(10, l) == findfirst(x -> x == 10, l)
+end
+
+@testset "append! and prepend!" begin
+    a = MutableVecLinkedList{Int}(1, 2)
+    b = MutableVecLinkedList{Int}(3, 4)
+    append!(a, b)
+    @test collect(a) == [1, 2, 3, 4]
+
+    c = MutableVecLinkedList{Int}(3, 4)
+    d = MutableVecLinkedList{Int}(1, 2)
+    prepend!(c, d)
+    @test collect(c) == [1, 2, 3, 4]
+end
+
+@testset "delete! alias for remove!" begin
+    l = MutableVecLinkedList{Int}(1, 2, 3)
+    idx = front_index(l)
+    ret = delete!(l, idx)
+    @test ret === l
+    @test collect(l) == [2, 3]
+end
