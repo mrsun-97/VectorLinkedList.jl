@@ -1,1 +1,14 @@
+name = "VectorLinkedList"
+uuid = "36209acd-331a-4488-8bd1-44f2118d39bb"
+version = "0.1.0"
+
+[compat]
+julia = "1.6"
+
 [deps]
+
+[extras]
+Test = "8dfed614-e22c-358a-ae15-43b8f6b9c0f0"
+
+[targets]
+test = ["Test"]

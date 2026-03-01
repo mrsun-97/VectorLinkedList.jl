@@ -1,30 +1,14 @@
 module VectorLinkedList
-# using Base:
-#             Iterators,
-#             HasEltype,
-#             HasLength,
-#             IteratorEltype,
-#             IteratorSize,
-#             SizeUnknown,
-#             lt,
-#             Ordering,
-#             ForwardOrdering,
-#             Forward,
-#             ReverseOrdering,
-#             Reverse,
-#             Lt,
-#             isbitsunion,
-#             isiterable,
-#             dict_with_eltype,
-#             KeySet,
-#             Callable,
-#             _tablesz,
-#             findnextnot,
-#             unsafe_getindex,
-#             unsafe_setindex!,
-#             peek
 
 include("functions.jl")
+
 export MutableVecLinkedList
+export with_capacity
+export insert_after!
+export insert_before!
+export remove!
+export front_index
+export back_index
+export capacity
 
 end
